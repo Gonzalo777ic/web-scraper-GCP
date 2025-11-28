@@ -1,0 +1,11 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  database_host: postgres-service 
+  database_name: price_monitor_db
+  database_user: price_monitor_user
+  api_host: api-service 
+  api_port: "80"
