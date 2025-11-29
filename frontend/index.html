@@ -5,52 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitor de Precios Cloud-Native</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .product-img { width: 80px; height: auto; border-radius: 5px; border: 1px solid #eee; }
+        .table td { vertical-align: middle; }
+    </style>
 </head>
 <body class="bg-light">
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>📉 Dashboard de Precios Lenovo</h1>
-            <button onclick="loadData()" class="btn btn-primary">🔄 Actualizar</button>
+            <div>
+                <h1>📉 Dashboard de Precios</h1>
+                <p class="text-muted">Monitoreo en tiempo real de Lenovo, HP y más.</p>
+            </div>
+            <button onclick="loadData()" class="btn btn-primary btn-lg shadow">🔄 Actualizar Datos</button>
         </div>
 
         <div class="row mb-4">
             <div class="col-md-4">
-                <div class="card p-3 text-center">
-                    <h5>Total Productos</h5>
-                    <h2 id="total-count">0</h2>
+                <div class="card p-3 text-center border-0 shadow-sm">
+                    <h6 class="text-muted">Total Productos</h6>
+                    <h2 id="total-count" class="fw-bold">0</h2>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card p-3 text-center">
-                    <h5>Última Actualización</h5>
-                    <h2 id="last-update" style="font-size: 1.2rem;">-</h2>
+                <div class="card p-3 text-center border-0 shadow-sm">
+                    <h6 class="text-muted">Último Scrapeo</h6>
+                    <h2 id="last-update" class="fs-4">-</h2>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card p-3 text-center">
-                    <h5>Estado del Sistema</h5>
-                    <h2 id="system-status" class="text-success">Conectando...</h2>
+                <div class="card p-3 text-center border-0 shadow-sm">
+                    <h6 class="text-muted">Estado API</h6>
+                    <h2 id="system-status" class="fs-4 text-warning">Conectando...</h2>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Listado de Precios Actuales</h5>
+        <div class="card border-0 shadow">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0">📦 Inventario Detectado</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped">
-                        <thead>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
+                                <th>Imagen</th>
                                 <th>Producto</th>
-                                <th>ID (SKU)</th>
+                                <th>Tienda</th>
                                 <th>Precio (S/)</th>
-                                <th>Fecha</th>
+                                <th>ID (SKU)</th>
                             </tr>
                         </thead>
                         <tbody id="price-table">
-                            <tr><td colspan="4" class="text-center">Cargando datos...</td></tr>
+                            <tr><td colspan="5" class="text-center py-4">Cargando datos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -61,38 +69,38 @@
     <script>
         async function loadData() {
             try {
-                // 1. Verificar Estado
-                const statusRes = await fetch('/api/db-info');
-                const statusData = await statusRes.json();
-                
-                if(statusData.DB_HOST) {
-                    document.getElementById('system-status').innerText = "API Conectada ✅";
-                    document.getElementById('system-status').className = "text-success";
-                }
-
-                // 2. Obtener Precios REALES
                 const pricesRes = await fetch('/api/prices');
                 const prices = await pricesRes.json();
 
+                document.getElementById('system-status').innerText = "En Línea ✅";
+                document.getElementById('system-status').className = "fs-4 text-success";
+                
                 document.getElementById('total-count').innerText = prices.length;
                 document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
 
                 const tableBody = document.getElementById('price-table');
-                tableBody.innerHTML = ""; // Limpiar tabla
+                tableBody.innerHTML = "";
 
                 if (prices.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Aún no hay datos. Ejecuta el Scraper.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">La base de datos está vacía. Ejecuta el Scraper.</td></tr>';
                     return;
                 }
 
-                // Llenar tabla con datos
                 prices.forEach(p => {
+                    // Si no hay imagen, usar un placeholder
+                    const img = p.image_url ? p.image_url : 'https://placehold.co/80x60?text=No+Img';
+                    const store = p.store || 'Desconocido';
+                    
                     const row = `
                         <tr>
-                            <td><strong>${p.name || "Desconocido"}</strong></td>
-                            <td><span class="badge bg-secondary">${p.product_id}</span></td>
-                            <td class="text-success fw-bold">S/ ${p.price}</td>
-                            <td>${p.timestamp}</td>
+                            <td><img src="${img}" class="product-img" loading="lazy"></td>
+                            <td>
+                                <div class="fw-bold">${p.name || "Sin Nombre"}</div>
+                                <small class="text-muted">${p.timestamp}</small>
+                            </td>
+                            <td><span class="badge bg-info text-dark">${store}</span></td>
+                            <td class="fs-5 text-success fw-bold">S/ ${p.price}</td>
+                            <td><small class="text-monospace">${p.product_id}</small></td>
                         </tr>
                     `;
                     tableBody.innerHTML += row;
@@ -100,12 +108,10 @@
 
             } catch (e) {
                 console.error(e);
-                document.getElementById('system-status').innerText = "Error API ❌";
-                document.getElementById('system-status').className = "text-danger";
+                document.getElementById('system-status').innerText = "Desconectado ❌";
+                document.getElementById('system-status').className = "fs-4 text-danger";
             }
         }
-
-        // Cargar al inicio
         loadData();
     </script>
 </body>

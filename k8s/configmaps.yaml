@@ -7,6 +7,6 @@ data:
   DATABASE_NAME: price_monitor_db
   DATABASE_USER: price_monitor_user
   
-  # AGREGAMOS http:// AQUÍ:
+
   API_HOST: http://api-service
   API_PORT: "80"
