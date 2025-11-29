@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor de Precios Cloud-Native</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>📉 Dashboard de Precios Lenovo</h1>
+            <button onclick="loadData()" class="btn btn-primary">🔄 Actualizar</button>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card p-3 text-center">
+                    <h5>Total Productos</h5>
+                    <h2 id="total-count">0</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 text-center">
+                    <h5>Última Actualización</h5>
+                    <h2 id="last-update" style="font-size: 1.2rem;">-</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3 text-center">
+                    <h5>Estado del Sistema</h5>
+                    <h2 id="system-status" class="text-success">Conectando...</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Listado de Precios Actuales</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>ID (SKU)</th>
+                                <th>Precio (S/)</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="price-table">
+                            <tr><td colspan="4" class="text-center">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                // 1. Verificar Estado
+                const statusRes = await fetch('/api/db-info');
+                const statusData = await statusRes.json();
+                
+                if(statusData.DB_HOST) {
+                    document.getElementById('system-status').innerText = "API Conectada ✅";
+                    document.getElementById('system-status').className = "text-success";
+                }
+
+                // 2. Obtener Precios REALES
+                const pricesRes = await fetch('/api/prices');
+                const prices = await pricesRes.json();
+
+                document.getElementById('total-count').innerText = prices.length;
+                document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+
+                const tableBody = document.getElementById('price-table');
+                tableBody.innerHTML = ""; // Limpiar tabla
+
+                if (prices.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Aún no hay datos. Ejecuta el Scraper.</td></tr>';
+                    return;
+                }
+
+                // Llenar tabla con datos
+                prices.forEach(p => {
+                    const row = `
+                        <tr>
+                            <td><strong>${p.name || "Desconocido"}</strong></td>
+                            <td><span class="badge bg-secondary">${p.product_id}</span></td>
+                            <td class="text-success fw-bold">S/ ${p.price}</td>
+                            <td>${p.timestamp}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('system-status').innerText = "Error API ❌";
+                document.getElementById('system-status').className = "text-danger";
+            }
+        }
+
+        // Cargar al inicio
+        loadData();
+    </script>
+</body>
+</html>

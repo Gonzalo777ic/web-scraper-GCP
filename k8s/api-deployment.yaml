@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: price-api
-        image: google-artifact-registry-url/price-monitor-repo/price-api:latest
+        image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/price-api:v0.2
         ports:
         - containerPort: 80
         envFrom:

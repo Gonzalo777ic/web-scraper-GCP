@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: price-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: price-frontend
+  labels:
+    app: price-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: price-frontend
+  template:
+    metadata:
+      labels:
+        app: price-frontend
+    spec:
+      containers:
+      - name: price-frontend
+        # Usamos directamente la v0.2 que acabas de subir
+        image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/price-frontend:v0.2
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+            ephemeral-storage: "1Gi"

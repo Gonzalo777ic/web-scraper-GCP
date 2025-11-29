@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: price-scraper-job
+spec:
+  schedule: "*/15 * * * *" # Cada 15 min
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: scraper
+            # VOLVEMOS A LA VERSIÓN V1.0 QUE FUNCIONÓ
+            image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/price-scraper:v1.0
+            imagePullPolicy: Always
+            resources:
+              requests:
+                cpu: "500m"
+                memory: "1.5Gi"
+                ephemeral-storage: "2Gi"
+            env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            envFrom:
+            - configMapRef:
+                name: app-config
+          restartPolicy: OnFailure
