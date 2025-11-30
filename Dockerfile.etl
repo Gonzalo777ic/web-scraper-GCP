@@ -1,0 +1,5 @@
+FROM python:3.11-slim
+RUN pip install requests google-cloud-bigquery
+COPY etl_script.py /app/etl_script.py
+WORKDIR /app
+CMD ["python", "etl_script.py"]

@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etl-bigquery-job
+spec:
+  # Ejecutar 30 min después del scraper (08:30 AM y 08:30 PM hora Perú aprox)
+  schedule: "30 4,16 * * *" 
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: default 
+          containers:
+          - name: etl
+            image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/etl-job:v1
+            env:
+            - name: GCP_PROJECT_ID
+              value: "project-378f1530-eea8-4d9e-80f"
+          restartPolicy: OnFailure

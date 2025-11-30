@@ -3,16 +3,18 @@ kind: CronJob
 metadata:
   name: price-scraper-job
 spec:
-  schedule: "*/15 * * * *" 
+  # 04:00 UTC = 11:00 PM Perú
+  # 16:00 UTC = 11:00 AM Perú
+  schedule: "0 4,16 * * *" 
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
         spec:
           containers:
           - name: scraper
-
             image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/price-scraper:vFinal
             imagePullPolicy: Always
             resources:
