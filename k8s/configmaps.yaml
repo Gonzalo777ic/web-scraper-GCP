@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  # Definimos explícitamente las variables en MAYÚSCULAS
+
   DATABASE_HOST: "postgres-service"
   DATABASE_NAME: "price_monitor_db"
   DATABASE_USER: "price_monitor_user"

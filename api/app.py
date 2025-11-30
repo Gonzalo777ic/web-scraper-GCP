@@ -8,28 +8,24 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import date, datetime
 
-# --- CONFIGURACIÓN DE LOGS ---
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Price Monitoring API (SQL)", version="2.0.0")
+app = FastAPI(title="Price Monitoring API (SQL)", version="2.1.0")
 
-# --- CONFIGURACIÓN BASE DE DATOS ---
+
 DB_HOST = os.getenv("DATABASE_HOST")
 DB_USER = os.getenv("DATABASE_USER")
 DB_NAME = os.getenv("DATABASE_NAME")
-# Nota: Kubernetes inyecta el secreto como POSTGRES_PASSWORD, asegúrate de leer ese
 DB_PASS = os.getenv("POSTGRES_PASSWORD") 
 
-# Cadena de conexión PostgreSQL
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 
-# Crear motor SQL
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# --- MODELO DE TABLA (SQLAlchemy) ---
 class DailyPrice(Base):
     __tablename__ = "daily_prices"
     id = Column(Integer, primary_key=True, index=True)
@@ -42,7 +38,6 @@ class DailyPrice(Base):
     scrape_date = Column(Date, default=date.today)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# --- MODELO DE VALIDACIÓN (Pydantic) ---
 class PriceEntry(BaseModel):
     product_id: str
     price: float
@@ -52,15 +47,12 @@ class PriceEntry(BaseModel):
     image_url: Optional[str] = None
     store: Optional[str] = None
 
-# --- ENDPOINTS ---
-
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Price API (SQL Persistent) is Running"}
 
 @app.get("/db-info")
 def get_db_info():
-    # Prueba de conexión real
     try:
         db = SessionLocal()
         count = db.query(DailyPrice).count()
@@ -80,10 +72,6 @@ def get_db_info():
 async def create_price_entry(entry: PriceEntry):
     db = SessionLocal()
     try:
-        # LÓGICA DE "INSERTAR SI NO EXISTE HOY"
-        # Usamos SQL puro para eficiencia con ON CONFLICT (Postgres feature)
-        # El constraint unique_price_per_day hace el trabajo sucio.
-        
         sql = text("""
             INSERT INTO daily_prices (product_id, name, price, currency, store, image_url, scrape_date)
             VALUES (:pid, :name, :price, :curr, :store, :img, CURRENT_DATE)
@@ -111,11 +99,10 @@ async def create_price_entry(entry: PriceEntry):
 
 @app.get("/prices")
 def get_all_prices():
-    """Devuelve los últimos 100 precios registrados."""
+    
     db = SessionLocal()
     try:
-        # Traemos los últimos 100 ordenados por fecha de creación
-        results = db.query(DailyPrice).order_by(DailyPrice.created_at.desc()).limit(100).all()
+        results = db.query(DailyPrice).order_by(DailyPrice.created_at.desc()).all()
         return results
     finally:
         db.close()

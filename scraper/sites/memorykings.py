@@ -1,4 +1,4 @@
-# scraper/sites/memorykings.py
+
 import time
 import re
 import random
@@ -19,9 +19,9 @@ CATEGORIES = [
 ]
 
 def scroll_memorykings(driver):
-    """Scroll por pasos para activar lazy load (Fiel a tu local)."""
+    
     print("   [Memory Kings] Bajando para cargar catálogo...")
-    # Tu lógica local: 3 pasos de 700px
+
     for _ in range(3):
         driver.execute_script("window.scrollBy(0, 700);")
         time.sleep(0.5)
@@ -32,8 +32,8 @@ def extract_category_data(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     page_products = []
     
-    # Tu selector local exacto: 'li div a'
-    # Esto itera sobre los enlaces que envuelven el contenido
+
+
     items = soup.select('li div a')
     
     for item_link in items:
@@ -41,30 +41,30 @@ def extract_category_data(html_content):
             content_div = item_link.select_one('.content')
             if not content_div: continue
 
-            # 1. NOMBRE
+
             title_tag = content_div.select_one('.title h4')
             if not title_tag: continue
             name = title_tag.get_text(strip=True)
 
-            # 2. PRECIO (Tu lógica Regex restaurada)
+
             price = 0.0
             price_div = content_div.select_one('.price')
             if not price_div:
-                price_div = content_div.select_one('.price-before') # Fallback
+                price_div = content_div.select_one('.price-before') 
             
             if price_div:
                 raw_text = price_div.get_text(strip=True)
-                # Buscamos patrón específico: S/ seguido de números
-                # Esto evita confundirse con el precio en dólares
+
+
                 match = re.search(r'S/\s*([\d,]+\.?\d*)', raw_text)
                 if match:
-                    # Limpiamos: "1,169.50" -> 1169.50
+
                     clean_str = match.group(1).replace(",", "")
                     try: price = float(clean_str)
                     except: price = 0.0
             
-            # 3. IMAGEN
-            # Buscamos la imagen dentro del link (item_link), no dentro de content_div
+
+
             img_div = item_link.select_one('.image img')
             image_url = None
             
@@ -76,11 +76,11 @@ def extract_category_data(html_content):
                     else:
                         image_url = src
 
-            # 4. ID (SKU o Código Interno)
+
             pid = ""
-            code_tag = content_div.select_one('.code') # A veces es .code a secas
+            code_tag = content_div.select_one('.code') 
             if code_tag:
-                # "Código interno: 12345" -> "12345"
+
                 pid = code_tag.get_text(strip=True).replace("Código interno:", "").strip()
             
             if not pid:
@@ -103,7 +103,7 @@ def extract_category_data(html_content):
     return page_products
 
 def scrape(driver):
-    """Función orquestadora para main.py"""
+    
     all_products = []
     print(f"--- Scrapeando MEMORY KINGS ({len(CATEGORIES)} categorías) ---")
 
@@ -114,7 +114,7 @@ def scrape(driver):
         try:
             driver.get(url)
             
-            # Espera explícita
+
             try:
                 WebDriverWait(driver, 20).until(
                     EC.presence_of_element_located((By.CLASS_NAME, "content"))

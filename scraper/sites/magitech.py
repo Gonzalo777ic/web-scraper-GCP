@@ -15,30 +15,30 @@ from webdriver_manager.core.os_manager import ChromeType
 def setup_driver():
     chrome_options = Options()
     
-    # --- MODO HEADLESS MEJORADO ---
+
     chrome_options.add_argument("--headless=new") 
     
-    # --- ARGUMENTOS BÁSICOS ---
+
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
     
-    # --- EVASIÓN DE DETECCIÓN (IMPORTANTE) ---
-    # 1. Deshabilitar la bandera de automatización de Chrome
+
+
     chrome_options.add_argument("--disable-blink-features=AutomationControlled") 
     
-    # 2. Ocultar que es controlado por software de prueba
+
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
     
-    # 3. User-Agent Rotativo o fijo pero realista (asegúrate que sea reciente)
+
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
     service = Service(ChromeDriverManager(chrome_type=ChromeType.GOOGLE).install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
     
-    # --- TRUCO ADICIONAL DE JAVASCRIPT ---
-    # Sobrescribir la propiedad webdriver para que retorne undefined en lugar de true
+
+
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
             Object.defineProperty(navigator, 'webdriver', {
@@ -50,7 +50,7 @@ def setup_driver():
     return driver
 def scroll_memorykings(driver):
     print("   [MK] Bajando para cargar catálogo...")
-    # Scroll en pasos para activar imágenes lazy
+
     for _ in range(3):
         driver.execute_script("window.scrollBy(0, 700);")
         time.sleep(0.5)
@@ -62,63 +62,63 @@ def extract_category_data(html_content):
     page_products = []
     base_url = "https://www.memorykings.pe"
 
-    # Buscamos por la clase 'content' que contiene el texto del producto
+
     content_divs = soup.select('div.content')
 
     for content in content_divs:
         try:
             item = {}
             
-            # Subir al padre <a> para tener el enlace completo
+
             link_tag = content.find_parent('a')
             if not link_tag: continue
 
-            # --- NOMBRE ---
+
             title_tag = content.select_one('.title h4')
             item['name'] = title_tag.get_text(strip=True) if title_tag else "Sin Nombre"
 
-            # --- PRECIO (Regex para separar Soles de Dólares) ---
-            # Ejemplo texto: "$ 340.00 ó S/ 1,169.50"
+
+
             price_div = content.select_one('.price')
             if not price_div:
-                price_div = content.select_one('.price-before') # Fallback
+                price_div = content.select_one('.price-before') 
             
             price_text = "Agotado"
             if price_div:
                 raw_text = price_div.get_text(strip=True)
-                # Buscamos patrón: S/ seguido de números, comas y puntos
+
                 match = re.search(r'S/\s*([\d,]+\.?\d*)', raw_text)
                 if match:
                     price_text = "S/ " + match.group(1)
                 else:
-                    # Si no encuentra patrón S/, guardamos todo el texto
+
                     price_text = raw_text
             
             item['price'] = price_text
 
-            # --- IMAGEN ---
-            # El div imagen es hermano anterior del div content
-            # Usamos el link padre para buscarlo hacia abajo
+
+
+
             img_tag = link_tag.select_one('.image img')
             img_url = "No imagen"
             if img_tag:
                 src = img_tag.get('src') or img_tag.get('data-src')
                 if src:
-                    # Corregir URL relativa
+
                     if not src.startswith('http'):
                         img_url = base_url + src if src.startswith('/') else base_url + '/' + src
                     else:
                         img_url = src
             item['image_url'] = img_url
 
-            # --- URL ---
+
             href = link_tag.get('href')
             if href:
                 item['url'] = base_url + href if not href.startswith('http') else href
             else:
                 item['url'] = ""
 
-            # --- STOCK & SKU ---
+
             stock_tag = content.select_one('.stock b')
             item['stock'] = stock_tag.get_text(strip=True) if stock_tag else "?"
             
@@ -133,7 +133,7 @@ def extract_category_data(html_content):
     return page_products
 
 def main():
-    # Lista de categorías
+
     categories = [
         "https://www.memorykings.pe/listados/247/laptops-intel-core-i3",
         "https://www.memorykings.pe/listados/258/laptops-intel-core-i5",
@@ -158,7 +158,7 @@ def main():
             try:
                 driver.get(url)
                 
-                # Esperamos a que aparezca al menos un contenido de producto
+
                 try:
                     WebDriverWait(driver, 20).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "content"))
@@ -177,7 +177,7 @@ def main():
             except Exception as e:
                 print(f"   -> Error procesando categoría: {e}")
 
-        # Guardar
+
         with open('memorykings_laptops.json', 'w', encoding='utf-8') as f:
             json.dump(all_products, f, indent=4, ensure_ascii=False)
         print(f"Total Final: {len(all_products)} guardados.")

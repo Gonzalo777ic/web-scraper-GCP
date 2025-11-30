@@ -1,4 +1,4 @@
-# scraper/sites/realplaza.py
+
 import time
 import re
 import random
@@ -12,7 +12,7 @@ BASE_URL = "https://www.realplaza.com/computacion/laptops"
 TOTAL_PAGES = 10 
 
 def scroll_realplaza(driver):
-    """Scroll para renderizar componentes React de VTEX IO."""
+    
     print("   [Real Plaza] Bajando para renderizar componentes...")
     last_height = driver.execute_script("return document.body.scrollHeight")
     step = 500
@@ -37,12 +37,12 @@ def extract_page_data(html_content):
 
     for card in cards:
         try:
-            # 1. NOMBRE
+
             name_tag = card.select_one('.vtex-product-summary-2-x-productBrand')
             if not name_tag: continue
             name = name_tag.get_text(strip=True)
 
-            # 2. PRECIO
+
             price = 0.0
             oh_price = card.select_one('.realplaza-product-custom-0-x-productSummaryPrice__Option__ThirdPrice span')
             online_price = card.select_one('.realplaza-product-custom-0-x-productSummaryPrice__Option__OfferPrice span')
@@ -60,13 +60,13 @@ def extract_page_data(html_content):
                 try: price = float(clean_text)
                 except: price = 0.0
 
-            # 3. IMAGEN
+
             img_tag = card.select_one('img.vtex-product-summary-2-x-imageNormal')
             image_url = None
             if img_tag:
                 image_url = img_tag.get('src')
 
-            # 4. ID
+
             link_tag = card.select_one('a.vtex-product-summary-2-x-clearLink')
             pid = ""
             if link_tag:
@@ -77,7 +77,7 @@ def extract_page_data(html_content):
             if not pid:
                 pid = name.replace(" ", "-").upper()[:20]
 
-            # 5. VENDEDOR
+
             seller_tag = card.select_one('.realplaza-product-custom-0-x-sellerNameParagraph')
             seller = seller_tag.get_text(strip=True) if seller_tag else "Real Plaza"
 

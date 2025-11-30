@@ -1,4 +1,4 @@
-# scraper/sites/asus.py
+
 import time
 import re
 from bs4 import BeautifulSoup
@@ -19,9 +19,9 @@ def scroll_and_load_more(driver):
     """
     print("   [Asus] Bajando y buscando botón 'Mostrar más'...")
     
-    # Intentamos cargar más productos hasta 3 veces
+
     for i in range(3):
-        # 1. Scroll al fondo
+
         last_height = driver.execute_script("return document.body.scrollHeight")
         step = 600
         for pos in range(0, last_height, step):
@@ -30,30 +30,30 @@ def scroll_and_load_more(driver):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
 
-        # 2. Buscar botón "Show more" o "Mostrar más"
-        # Asus usa un botón con clase 'ShowMore__showMoreBtn__'
+
+
         try:
-            # Selector genérico para el botón
+
             btn = driver.find_element(By.CSS_SELECTOR, "div[class*='ShowMore__showMoreBtn']")
             if btn.is_displayed():
                 print(f"   [Asus] Clic en 'Mostrar más' ({i+1})...")
                 driver.execute_script("arguments[0].click();", btn)
-                time.sleep(4) # Espera carga AJAX
+                time.sleep(4) 
             else:
-                break # No hay botón, fin de lista
+                break 
         except NoSuchElementException:
-            break # No existe el botón
+            break 
 
 def extract_category_data(html_content, category_name):
     soup = BeautifulSoup(html_content, 'html.parser')
     products = []
 
-    # Regex para clases dinámicas
+
     cards = soup.find_all('div', class_=re.compile(r'ProductCardNormalGrid__productCardContainer'))
 
     for card in cards:
         try:
-            # 1. NOMBRE
+
             name_tag = card.find('h2')
             if not name_tag:
                 link_heading = card.find('a', class_=re.compile(r'ProductCardNormalGrid__headingRow'))
@@ -61,7 +61,7 @@ def extract_category_data(html_content, category_name):
             
             name = name_tag.get_text(" ", strip=True) if name_tag else "Asus Desconocido"
 
-            # 2. PRECIO
+
             price = 0.0
             price_text = ""
             
@@ -78,14 +78,14 @@ def extract_category_data(html_content, category_name):
                 try: price = float(clean_text)
                 except: price = 0.0
 
-            # 3. IMAGEN
+
             img_url = None
             img_wrapper = card.find('div', class_=re.compile(r'ProductCardNormalGrid__imageWrapper'))
             if img_wrapper:
                 img_tag = img_wrapper.find('img')
                 if img_tag: img_url = img_tag.get('src')
 
-            # 4. ID
+
             pid = name.replace(" ", "-").replace("/", "").upper()[:20]
 
             if price > 0:
@@ -120,7 +120,7 @@ def scrape(driver):
             except TimeoutException:
                 print(f"   [Asus] Timeout en {cat['name']}. Continuando...")
 
-            # Scroll mejorado con clic en "Ver más"
+
             scroll_and_load_more(driver)
             
             current_products = extract_category_data(driver.page_source, cat['name'])

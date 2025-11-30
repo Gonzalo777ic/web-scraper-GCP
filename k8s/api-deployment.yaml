@@ -5,7 +5,7 @@ metadata:
   labels:
     app: price-api
 spec:
-  replicas: 1  # <--- BAJAMOS A 1 PARA NO SATURAR LA CUOTA
+  replicas: 1  
   selector:
     matchLabels:
       app: price-api
@@ -16,13 +16,13 @@ spec:
     spec:
       containers:
       - name: price-api
-        # Usamos la versión v2.1 (que reconstruimos sin caché)
+
         image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/price-api:v2.1
         imagePullPolicy: Always
         ports:
         - containerPort: 80
         env:
-        # --- INYECCIÓN EXPLÍCITA ---
+
         - name: DATABASE_HOST
           valueFrom:
             configMapKeyRef:

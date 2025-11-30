@@ -1,4 +1,4 @@
-# scraper/sites/infotec.py
+
 import time
 import re
 from bs4 import BeautifulSoup
@@ -31,28 +31,28 @@ def extract_page_data(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     page_products = []
 
-    # Selector de PrestaShop para tarjetas de producto
+
     cards = soup.select('article.product-miniature')
 
     for card in cards:
         try:
-            # 1. NOMBRE
+
             name_tag = card.select_one('.product-title a')
             if not name_tag: continue
             name = name_tag.get_text(strip=True)
 
-            # 2. PRECIO
+
             price_tag = card.select_one('.product-price')
             price = 0.0
             if price_tag:
                 raw_text = price_tag.get_text(strip=True)
-                # Limpieza: "S/ 3,500.00" -> 3500.0
+
                 clean_text = re.sub(r'[^\d.]', '', raw_text.replace(",", ""))
                 try: price = float(clean_text)
                 except: price = 0.0
 
-            # 3. IMAGEN
-            # Infotec usa 'data-src' frecuentemente para lazy load
+
+
             img_tag = card.select_one('img.product-thumbnail-first')
             image_url = None
             
@@ -62,17 +62,17 @@ def extract_page_data(html_content):
                 elif img_tag.get('src'):
                     image_url = img_tag.get('src')
             
-            # Corrección de protocolo si es necesario
+
             if image_url and image_url.startswith("//"):
                 image_url = "https:" + image_url
 
-            # 4. ID
-            # PrestaShop suele tener un atributo data-id-product
+
+
             pid = card.get('data-id-product')
             if not pid:
                 pid = name.replace(" ", "-").replace("/", "").upper()[:20]
 
-            # 5. Tienda (Para el Dashboard)
+
             store = "Infotec"
 
             if price > 0:
@@ -92,7 +92,7 @@ def extract_page_data(html_content):
     return page_products
 
 def scrape(driver):
-    """Función principal llamada por main.py"""
+    
     all_products = []
     print(f"--- Scrapeando INFOTEC ({BASE_URL}) ---")
 
@@ -116,7 +116,7 @@ def scrape(driver):
             print(f"   [Infotec] Encontrados: {len(products)}")
             all_products.extend(products)
             
-            time.sleep(2) # Pausa cortés
+            time.sleep(2) 
 
         except Exception as e:
             print(f"   [Infotec] Error en página {page}: {e}")

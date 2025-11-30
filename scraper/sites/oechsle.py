@@ -1,4 +1,4 @@
-# scraper/sites/oechsle.py
+
 import time
 import re
 import random
@@ -13,7 +13,7 @@ QUERY_PARAMS = "fq=C%3A%2F160%2F168%2F209%2F"
 TOTAL_PAGES = 11
 
 def scroll_oechsle(driver):
-    """Scroll suave para Oechsle (VTEX)."""
+    
     print("   [Oechsle] Bajando para cargar imágenes...")
     last_height = driver.execute_script("return document.body.scrollHeight")
     step = 400
@@ -33,20 +33,20 @@ def extract_page_data(html_content):
 
     for card in cards:
         try:
-            # 1. NOMBRE
+
             name = card.get('data-product-name')
             if not name:
                 name_tag = card.select_one('.resultItem__detail--name')
                 if name_tag: name = name_tag.get_text(strip=True)
             if not name: continue
 
-            # 2. PRECIO
+
             price = 0.0
             price_container = card.select_one('.resultItem__detail--price')
             
             if price_container:
-                # Prioridad: Precio Normal > Precio Oh!
-                # (Para la API necesitamos un solo float, usamos el estándar o el mejor disponible)
+
+
                 standard_price = price_container.select_one('.price:not(.priceList):not(.priceTOh) .value')
                 oh_price = price_container.select_one('.priceTOh .value')
                 
@@ -54,35 +54,35 @@ def extract_page_data(html_content):
                 if standard_price: raw_text = standard_price.get_text(strip=True)
                 elif oh_price: raw_text = oh_price.get_text(strip=True)
                 else:
-                    # Fallback Regex
+
                     all_text = price_container.get_text()
                     match = re.search(r'S/\s*[\d,.]+', all_text)
                     if match: raw_text = match.group(0)
 
-                # Limpieza: "S/. 3,999.00" -> 3999.0
+
                 if raw_text:
                     clean_text = re.sub(r'[^\d.]', '', raw_text.replace(",", ""))
                     try: price = float(clean_text)
                     except: price = 0.0
 
-            # 3. IMAGEN
+
             img_tag = card.select_one('img.resultItem__image')
             image_url = None
             if img_tag:
                 src = img_tag.get('src')
                 if src:
                     image_url = src
-                    # Si src parece placeholder, usar data-src
+
                     if "arquivos/ids" not in src and img_tag.get('data-src'):
                         image_url = img_tag.get('data-src')
 
-            # 4. ID
-            # Oechsle suele tener data-product-id
+
+
             pid = card.get('data-product-id')
             if not pid:
                 pid = name.replace(" ", "-").replace("/", "").upper()[:20]
 
-            # 5. VENDEDOR (Extra)
+
             seller_tag = card.select_one('.resultItem__by-seller')
             seller = seller_tag.get_text(strip=True) if seller_tag else "Oechsle"
 
@@ -94,7 +94,7 @@ def extract_page_data(html_content):
                     "image_url": image_url,
                     "currency": "PEN",
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-                    "store": f"Oechsle ({seller})" # Incluimos el vendedor real
+                    "store": f"Oechsle ({seller})" 
                 })
 
         except Exception:
@@ -103,7 +103,7 @@ def extract_page_data(html_content):
     return page_products
 
 def scrape(driver):
-    """Función principal para main.py"""
+    
     all_products = []
     print(f"--- Scrapeando OECHSLE ({BASE_URL}) ---")
 

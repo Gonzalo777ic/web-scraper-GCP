@@ -1,4 +1,4 @@
-# scraper/sites/amazon.py
+
 import time
 import random
 import re
@@ -22,7 +22,7 @@ URLS = [
     ]
 
 def scroll_humano(driver):
-    """Scroll aleatorio para simular comportamiento humano."""
+    
     print("   [Amazon] Bajando para cargar imágenes...")
     last_height = driver.execute_script("return document.body.scrollHeight")
     current_pos = 0
@@ -40,41 +40,41 @@ def extract_page_data(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     page_products = []
 
-    # Detectar Captcha
+
     if "Enter the characters you see below" in soup.get_text():
         print("   [Amazon] ⚠️ ALERTA: CAPTCHA DETECTADO.")
         return []
 
-    # Selectores
+
     cards = soup.select('div[data-component-type="s-search-result"]')
     if not cards: cards = soup.select('.s-result-item')
 
     for card in cards:
         try:
-            # 1. TÍTULO
+
             title_tag = card.select_one('h2 span')
             if not title_tag: continue
             name = title_tag.get_text(strip=True)
 
-            # 2. PRECIO
+
             price_tag = card.select_one('.a-price .a-offscreen') or card.select_one('.a-color-price')
             price = 0.0
             if price_tag:
                 raw_text = price_tag.get_text(strip=True)
-                # Limpieza: "US$ 1,299.99" -> 1299.99
-                # Removemos todo excepto dígitos y punto
+
+
                 clean_text = re.sub(r'[^\d.]', '', raw_text)
                 try: price = float(clean_text)
                 except: price = 0.0
 
-            # 3. IMAGEN
+
             img_tag = card.select_one('img.s-image')
             image_url = None
             if img_tag:
                 image_url = img_tag.get('src')
             
-            # 4. ID (ASIN)
-            # Amazon pone el ID en el atributo data-asin
+
+
             pid = card.get("data-asin")
             if not pid: 
                 pid = re.sub(r'\W+', '', name)[:15].upper()
@@ -85,7 +85,7 @@ def extract_page_data(html_content):
                     "name": name,
                     "price": price,
                     "image_url": image_url,
-                    "currency": "USD", # Amazon suele ser USD
+                    "currency": "USD", 
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                     "store": "Amazon"
                 })
@@ -94,7 +94,7 @@ def extract_page_data(html_content):
     return page_products
 
 def scrape(driver):
-    """Función principal llamada por main.py"""
+    
     all_products = []
     print(f"--- Scrapeando AMAZON ({len(URLS)} páginas) ---")
 
@@ -102,15 +102,15 @@ def scrape(driver):
         print(f"   [Amazon] Procesando Página {i+1}...")
         try:
             driver.get(url)
-            time.sleep(random.uniform(2, 4)) # Espera aleatoria
+            time.sleep(random.uniform(2, 4)) 
 
-            # Esperar carga
+
             try:
                 WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-component-type='s-search-result']"))
                 )
             except TimeoutException:
-                pass # Intentamos scrapear igual por si acaso
+                pass 
 
             scroll_humano(driver)
             
@@ -118,7 +118,7 @@ def scrape(driver):
             print(f"   [Amazon] Encontrados: {len(products)}")
             all_products.extend(products)
 
-            # Pausa entre páginas para no ser bloqueados
+
             if i < len(URLS) - 1:
                 time.sleep(random.uniform(3, 6))
 
