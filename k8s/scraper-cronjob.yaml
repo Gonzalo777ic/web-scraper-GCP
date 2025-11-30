@@ -13,7 +13,7 @@ spec:
           containers:
           - name: scraper
 
-            image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/price-scraper:v2.4
+            image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/price-scraper:vFinal
             imagePullPolicy: Always
             resources:
               requests:

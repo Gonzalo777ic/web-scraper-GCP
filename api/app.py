@@ -1,61 +1,121 @@
 import os
+import logging
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List, Optional
-app = FastAPI(
-    title="Price Monitoring API",
-    description="API REST para almacenar y servir datos históricos de precios.",
-    version="1.1.0"
-)
+from typing import Optional, List
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, DateTime, text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import date, datetime
 
+# --- CONFIGURACIÓN DE LOGS ---
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+app = FastAPI(title="Price Monitoring API (SQL)", version="2.0.0")
+
+# --- CONFIGURACIÓN BASE DE DATOS ---
 DB_HOST = os.getenv("DATABASE_HOST")
 DB_USER = os.getenv("DATABASE_USER")
 DB_NAME = os.getenv("DATABASE_NAME")
+# Nota: Kubernetes inyecta el secreto como POSTGRES_PASSWORD, asegúrate de leer ese
+DB_PASS = os.getenv("POSTGRES_PASSWORD") 
 
+# Cadena de conexión PostgreSQL
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 
-prices_db = [] 
+# Crear motor SQL
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
+# --- MODELO DE TABLA (SQLAlchemy) ---
+class DailyPrice(Base):
+    __tablename__ = "daily_prices"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(String, index=True)
+    name = Column(String)
+    price = Column(Float)
+    currency = Column(String)
+    store = Column(String)
+    image_url = Column(String)
+    scrape_date = Column(Date, default=date.today)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+# --- MODELO DE VALIDACIÓN (Pydantic) ---
 class PriceEntry(BaseModel):
     product_id: str
     price: float
     timestamp: str
     name: Optional[str] = None
     currency: Optional[str] = "PEN"
-    
+    image_url: Optional[str] = None
+    store: Optional[str] = None
 
-    image_url: Optional[str] = None  
-    store: Optional[str] = None      
-
+# --- ENDPOINTS ---
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "Price API is Running"}
+    return {"status": "ok", "message": "Price API (SQL Persistent) is Running"}
 
 @app.get("/db-info")
 def get_db_info():
+    # Prueba de conexión real
+    try:
+        db = SessionLocal()
+        count = db.query(DailyPrice).count()
+        db.close()
+        status = "Connected"
+    except Exception as e:
+        status = f"Error: {str(e)}"
+        count = -1
+
     return {
         "DB_HOST": DB_HOST,
-        "DB_USER": DB_USER,
-        "DB_NAME": DB_NAME,
-        "CONNECTION_STATUS": "OK",
-        "TOTAL_RECORDS": len(prices_db)
+        "CONNECTION_STATUS": status,
+        "TOTAL_RECORDS_IN_DB": count
     }
 
 @app.post("/prices")
 async def create_price_entry(entry: PriceEntry):
-    prices_db.append(entry.dict())
-
-    if len(prices_db) > 300:
-        prices_db.pop(0)
-    return {"message": "Price data received", "data": entry}
+    db = SessionLocal()
+    try:
+        # LÓGICA DE "INSERTAR SI NO EXISTE HOY"
+        # Usamos SQL puro para eficiencia con ON CONFLICT (Postgres feature)
+        # El constraint unique_price_per_day hace el trabajo sucio.
+        
+        sql = text("""
+            INSERT INTO daily_prices (product_id, name, price, currency, store, image_url, scrape_date)
+            VALUES (:pid, :name, :price, :curr, :store, :img, CURRENT_DATE)
+            ON CONFLICT (product_id, store, scrape_date) 
+            DO UPDATE SET price = :price, created_at = CURRENT_TIMESTAMP
+        """)
+        
+        db.execute(sql, {
+            "pid": entry.product_id,
+            "name": entry.name,
+            "price": entry.price,
+            "curr": entry.currency,
+            "store": entry.store,
+            "img": entry.image_url
+        })
+        db.commit()
+        return {"message": "Saved to SQL", "product": entry.product_id}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error insertando {entry.product_id}: {e}")
+        return {"message": "Error saving", "error": str(e)}
+    finally:
+        db.close()
 
 @app.get("/prices")
 def get_all_prices():
-    """Devuelve los últimos precios registrados (invertidos)."""
-    return prices_db[::-1]
-
-@app.get("/prices/{product_id}")
-def get_price_history(product_id: str):
-    history = [p for p in prices_db if p['product_id'] == product_id]
-    return {"product_id": product_id, "history": history}
+    """Devuelve los últimos 100 precios registrados."""
+    db = SessionLocal()
+    try:
+        # Traemos los últimos 100 ordenados por fecha de creación
+        results = db.query(DailyPrice).order_by(DailyPrice.created_at.desc()).limit(100).all()
+        return results
+    finally:
+        db.close()

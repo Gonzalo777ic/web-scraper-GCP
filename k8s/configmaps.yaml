@@ -3,10 +3,9 @@ kind: ConfigMap
 metadata:
   name: app-config
 data:
-  DATABASE_HOST: postgres-service
-  DATABASE_NAME: price_monitor_db
-  DATABASE_USER: price_monitor_user
-  
-
-  API_HOST: http://api-service
+  # Definimos explícitamente las variables en MAYÚSCULAS
+  DATABASE_HOST: "postgres-service"
+  DATABASE_NAME: "price_monitor_db"
+  DATABASE_USER: "price_monitor_user"
+  API_HOST: "http://api-service"
   API_PORT: "80"
