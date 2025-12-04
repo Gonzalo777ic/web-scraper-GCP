@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ai-analysis-job
+spec:
+  # Horario: 12:00 PM y 12:00 AM hora Perú (UTC 17:00 y 05:00)
+  schedule: "0 5,17 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: default
+          containers:
+          - name: ai-job
+            image: us-central1-docker.pkg.dev/project-378f1530-eea8-4d9e-80f/price-monitor-repo/ai-job:v2
+            env:
+            - name: GCP_PROJECT_ID
+              value: "project-378f1530-eea8-4d9e-80f"
+          restartPolicy: OnFailure

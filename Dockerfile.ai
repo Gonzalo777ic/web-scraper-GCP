@@ -1,0 +1,6 @@
+FROM python:3.11-slim
+# Instalamos librerías científicas y XGBoost
+RUN pip install google-cloud-bigquery pandas scikit-learn xgboost db-dtypes pandas-gbq
+COPY ai_job.py /app/ai_job.py
+WORKDIR /app
+CMD ["python", "ai_job.py"]
