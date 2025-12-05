@@ -1,6 +1,7 @@
 import os
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware # <--- IMPORTANTE
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date, DateTime, text
@@ -8,12 +9,26 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import date, datetime
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Price Monitoring API (SQL)", version="2.1.0")
+app = FastAPI(title="Price Monitoring API (SQL)", version="2.2.0")
 
+# --- CONFIGURACIÓN DE CORS (Permite que Next.js se conecte) ---
+origins = [
+    "http://localhost:3000",  # Tu desarrollo local
+    "https://tu-proyecto.vercel.app", # Tu futuro deploy en Vercel
+    "*" # Permitir todo (solo para esta demo, úsalo con precaución)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# -------------------------------------------------------------
 
 DB_HOST = os.getenv("DATABASE_HOST")
 DB_USER = os.getenv("DATABASE_USER")
@@ -26,6 +41,8 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+# ... (MANTÉN EL RESTO DE TU CÓDIGO DE MODELOS DB Y PYDANTIC IGUAL) ...
+# Copia aquí las clases DailyPrice y PriceEntry del código anterior
 class DailyPrice(Base):
     __tablename__ = "daily_prices"
     id = Column(Integer, primary_key=True, index=True)
@@ -99,7 +116,6 @@ async def create_price_entry(entry: PriceEntry):
 
 @app.get("/prices")
 def get_all_prices():
-    
     db = SessionLocal()
     try:
         results = db.query(DailyPrice).order_by(DailyPrice.created_at.desc()).all()
